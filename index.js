@@ -11,23 +11,14 @@ function getConfigDir (config) {
 
 function init (config) {
   const secretsClient = new AWS.SecretsManager(config.aws.secrets.manager)
-  return new Promise(function (resolve, reject) {
-    secretsClient.getSecretValue({SecretId: config.aws.secrets.secretId}, (err, data) => {
-      if (err) {
-        reject(err)
-        return
-      }
-      const secretVariables = JSON.parse(data.SecretString)
+  return secretsClient.getSecretValue({SecretId: config.aws.secrets.secretId}).promise().then(function (data) {
+    const secretVariables = JSON.parse(data.SecretString)
 
-      const configDir = getConfigDir(config)
-      var fullFilename = Path.join(configDir, 'custom-environment-variables' + '.' + 'json')
-      const configObject = config.util.parseFile(fullFilename)
-      const environmentSubstitutions = config.util.substituteDeep(configObject, secretVariables)
-      console.log(environmentSubstitutions)
-      config.util.extendDeep(config, environmentSubstitutions)
-
-      resolve()
-    })
+    const configDir = getConfigDir(config)
+    var fullFilename = Path.join(configDir, 'custom-environment-variables' + '.' + 'json')
+    const configObject = config.util.parseFile(fullFilename)
+    const environmentSubstitutions = config.util.substituteDeep(configObject, secretVariables)
+    config.util.extendDeep(config, environmentSubstitutions)
   })
 }
 
